@@ -1,0 +1,20 @@
+{
+  "name": "wow-fsdps",
+  "version": "1.0.0",
+  "description": "A way to enjoy World of Warcraft with friends without pain in my hands",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "start": "node index.js"
+  },
+  "author": "Gideon Spierings",
+  "license": "WTFPL",
+  "dependencies": {
+    "keysender": "^1.6.5",
+    "robotjs": "^0.6.0"
+  },
+  "devDependencies": {
+    "node-gyp": "^9.1.0",
+    "nodemon": "^2.0.20"
+  }
+}
