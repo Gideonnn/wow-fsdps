@@ -10,6 +10,16 @@ const PIXEL_Y = 10;
 const PIXEL_GAP = 16;
 
 const spells = {
+  mount: {
+    name: 'Mount Ability',
+    key: 'x',
+    settings: {
+      minPressDelay: 62,
+      maxPressDelay: 97,
+      minGcdDelay: 50,
+      maxGcdDelay: 200,
+    },
+  },
   pummel: {
     name: 'Pummel',
     key: 'q',
@@ -22,6 +32,16 @@ const spells = {
   },
   mortalStrike: {
     name: 'Mortal Strike',
+    key: 'f1',
+    settings: {
+      minPressDelay: 68,
+      maxPressDelay: 121,
+      minGcdDelay: 2,
+      maxGcdDelay: 36,
+    },
+  },
+  revenge: {
+    name: 'Revenge',
     key: 'f1',
     settings: {
       minPressDelay: 68,
@@ -52,6 +72,16 @@ const spells = {
   },
   overpower: {
     name: 'Overpower',
+    key: 'f3',
+    settings: {
+      minPressDelay: 68,
+      maxPressDelay: 121,
+      minGcdDelay: 2,
+      maxGcdDelay: 36,
+    },
+  },
+  shieldSlam: {
+    name: 'Shield Slam',
     key: 'f3',
     settings: {
       minPressDelay: 68,
@@ -130,6 +160,26 @@ const spells = {
       maxGcdDelay: 29,
     },
   },
+  bloodrage: {
+    name: 'Bloodrage',
+    key: 'c',
+    settings: {
+      minPressDelay: 38,
+      maxPressDelay: 131,
+      minGcdDelay: 5,
+      maxGcdDelay: 29,
+    },
+  },
+  berserkerRage: {
+    name: 'Berserker rage',
+    key: 'r',
+    settings: {
+      minPressDelay: 40,
+      maxPressDelay: 75,
+      minGcdDelay: 5,
+      maxGcdDelay: 123,
+    },
+  },
   demoShout: {
     name: 'Demoralizing Shout',
     key: '3',
@@ -140,10 +190,21 @@ const spells = {
       maxGcdDelay: 123,
     },
   },
+  battleShout: {
+    name: 'Battle Shout',
+    key: 'z',
+    settings: {
+      minPressDelay: 40,
+      maxPressDelay: 75,
+      minGcdDelay: 80,
+      maxGcdDelay: 223,
+    },
+  },
 };
 
 // Globals
 let paused = false;
+let engagedCombat = false;
 let lastLog = '';
 
 // Welcome message
@@ -161,7 +222,16 @@ new GlobalHotkey({
   },
 });
 
+new GlobalHotkey({
+  key: 'f',
+  action: () => {
+    keyboard.sendKey('6', randBetween(29, 122)); // Zygor Action Button 1 (ZygorAB1)
+    keyboard.sendKey(';', randBetween(40, 194)); // Interact with target keybind
+  },
+});
+
 // mouse.moveTo(PIXEL_X, PIXEL_Y);
+workwindow.setForeground();
 
 setInterval(() => {
   if (!workwindow.isOpen()) {
@@ -175,12 +245,12 @@ setInterval(() => {
   }
 
   if (!paused) {
-    const [spec, ...state] = readState(PIXEL_X, PIXEL_Y, PIXEL_GAP, 15);
+    const [spec, ...state] = readState(PIXEL_X, PIXEL_Y, PIXEL_GAP, 16);
 
     if (!spec) {
       arms(state);
     } else {
-      fury(state);
+      revenge(state);
     }
   }
 }, TICK_INTERVAL_MS);
@@ -256,20 +326,37 @@ function arms(state) {
     sweepingStrikes,
     thunderClap,
     demoShout,
+    battleShout,
   ] = state;
 
-  if (combat && !mounted) {
-    if (!gcd && pummel) castSpell(spells.pummel);
-    if (!gcd && heroicStrike) castSpell(spells.heroicStrike);
-    if (!gcd && cleave) castSpell(spells.cleave);
-    if (!gcd && sweepingStrikes) castSpell(spells.sweepingStrikes);
-    if (!gcd && mortalStrike) castSpell(spells.mortalStrike);
-    if (!gcd && execute) castSpell(spells.execute);
-    if (!gcd && overpower) castSpell(spells.overpower);
-    if (!gcd && victoryRush) castSpell(spells.victoryRush);
-    if (!gcd && rend) castSpell(spells.rend);
-    if (!gcd && thunderClap) castSpell(spells.thunderClap);
-    if (!gcd && demoShout) castSpell(spells.demoShout);
+  if (combat) {
+    if (!engagedCombat) {
+      engagedCombat = true;
+      log('entering_combat', 'Entering combat');
+    }
+
+    if (!mounted && !gcd) {
+      if (pummel) castSpell(spells.pummel);
+      if (heroicStrike) castSpell(spells.heroicStrike);
+      if (cleave) castSpell(spells.cleave);
+      if (sweepingStrikes) castSpell(spells.sweepingStrikes);
+      if (mortalStrike) castSpell(spells.mortalStrike);
+      if (execute) castSpell(spells.execute);
+      if (overpower) castSpell(spells.overpower);
+      if (victoryRush) castSpell(spells.victoryRush);
+      if (rend) castSpell(spells.rend);
+      if (thunderClap) castSpell(spells.thunderClap);
+      // if (demoShout) castSpell(spells.demoShout);
+    }
+  } else {
+    if (engagedCombat) {
+      engagedCombat = false;
+      log('leaving_combat', 'Leaving combat');
+      // castSpell(spells.mount);
+      if (battleShout) {
+        castSpell(spells.battleShout);
+      }
+    }
   }
 }
 
@@ -302,6 +389,32 @@ function fury(state) {
     if (!gcd && heroicStrike) castSpell(spells.heroicStrike);
     if (!gcd && thunderClap) castSpell(spells.thunderClap);
     if (!gcd && demoShout) castSpell(spells.demoShout);
+  }
+}
+
+function revenge(state) {
+  const [
+    combat,
+    gcd,
+    mounted,
+    meleeRange,
+    revenge,
+    shieldSlam,
+    cleave,
+    thunderClap,
+    bloodrage,
+    berserkerRage,
+  ] = state;
+
+  if (combat && !mounted) {
+    if (!gcd && meleeRange) {
+      if (cleave) castSpell(spells.cleave);
+      if (revenge) castSpell(spells.revenge);
+      if (thunderClap) castSpell(spells.thunderClap);
+      if (shieldSlam) castSpell(spells.shieldSlam);
+      if (bloodrage) castSpell(spells.bloodrage);
+      if (berserkerRage) castSpell(spells.berserkerRage);
+    }
   }
 }
 
